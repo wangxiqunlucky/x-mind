@@ -1,0 +1,81 @@
+本模块只展示安卓渠道
+影响数据结果的页面上的选项:
+回本 LTV 留存
+回本类别:分成前 分成后
+其他指标:时间 负责人 渠道 等 只是在连接时加条件而已
+新增日期:adv_position_data表中的日期
+渠道:渠道类别
+成本	
+新增	
+单价	
+老玩家	
+至今回本金额
+
+
+
+#渠道类别数据,成本、新增、单价、老玩家、留存、留存率
+SELECT d.register_type register_type,a.date date,ROUND(SUM(a.divide_money)) divide_money,SUM(a.reg) reg,ROUND(SUM(a.divide_money)/SUM(a.reg)) reg_price,SUM(a.old_login) old_login,
+SUM(a.remain_2) remain_2,SUM(a.remain_3) remain_3,SUM(a.remain_4) remain_4,SUM(a.remain_5) remain_5,SUM(a.remain_6) remain_6,SUM(a.remain_7) remain_7,SUM(a.remain_10) remain_10,SUM(a.remain_15) remain_15,SUM(a.remain_30) remain_30,ROUND(SUM(a.remain_2)/SUM(a.reg)*100,1) remain_2_rate,ROUND(SUM(a.remain_3)/SUM(a.reg)*100,1) remain_3_rate,ROUND(SUM(a.remain_4)/SUM(a.reg)*100,1) remain_4_rate,ROUND(SUM(a.remain_5)/SUM(a.reg)*100,1) remain_5_rate,ROUND(SUM(a.remain_6)/SUM(a.reg)*100,1) remain_6_rate,ROUND(SUM(a.remain_7)/SUM(a.reg)*100,1) remain_7_rate,ROUND(SUM(a.remain_10)/SUM(a.reg)*100,1) remain_10_rate,ROUND(SUM(a.remain_15)/SUM(a.reg)*100,1) remain_15_rate,ROUND(SUM(a.remain_30)/SUM(a.reg)*100,1) remain_30_rate 
+FROM `think_adv_position_data` a 
+JOIN think_adv_position b ON a.adv_position_id=b.id 
+LEFT JOIN think_channel c ON b.channel_id=c.id 
+LEFT JOIN think_publisher d ON c.publisher_id=d.id 
+LEFT JOIN think_game_adv e ON b.game_adv_id=e.id 
+LEFT JOIN think_game f ON e.game_id=f.id 
+WHERE ( f.game_attribute <> 1 ) 
+AND ( d.register_type <> 6 ) AND ( (a.date >= '20170411') AND (a.date <= '20170417') ) 
+GROUP BY register_type, date 
+ORDER BY register_type ASC, date DESC
+
+#渠道类别数据,1-90天回本
+SELECT d.register_type AS register_type, a.register_date AS register_date, DATEDIFF(a.date, a.register_date) + 1 AS days, 
+ROUND(SUM(
+CASE 
+	WHEN d.user_name = 'yingyongbaoyishi' 
+	THEN 
+		CASE 
+			WHEN f.is_before_yishi_divide = 0 
+			THEN (a.money - a.yishi_divide_money) * f.gdt_game_divide_rate 
+			ELSE a.money * f.gdt_game_divide_rate - a.yishi_divide_money 
+		END 
+	WHEN d.is_gdt = 1 
+	THEN 
+		CASE 
+			WHEN f.is_before_gdt_divide = 0 
+			THEN (a.money - a.gdt_channel_divide_money - a.gdt_divide_money) * f.gdt_game_divide_rate 
+			ELSE a.money * f.gdt_game_divide_rate - a.gdt_channel_divide_money - a.gdt_divide_money 
+		END 
+	WHEN d.register_type = 7 
+	THEN a.money * f.publish_divide_rate 
+	ELSE a.money * (1 - f.game_channel_divide_rate) * f.game_divide_rate 
+END)) AS game_divide_money
+FROM `think_order_log` a 
+LEFT JOIN think_adv_position b ON a.adv_position_id = b.id 
+LEFT JOIN think_channel c ON b.channel_id = c.id 
+LEFT JOIN think_publisher d ON c.publisher_id = d.id 
+LEFT JOIN think_game_adv e ON b.game_adv_id = e.id 
+LEFT JOIN think_game f ON e.game_id = f.id
+WHERE f.game_attribute <> 1
+	AND d.register_type <> 6
+	AND (a.register_date >= '20170411'
+		AND a.register_date <= '20170417')
+GROUP BY register_type, register_date, days
+ORDER BY register_type ASC, register_date DESC, days ASC
+
+#渠道类别数据,至今回本
+SELECT d.register_type AS register_type, a.register_date AS register_date, ROUND(SUM(
+CASE WHEN d.user_name = 'yingyongbaoyishi' THEN CASE WHEN f.is_before_yishi_divide = 0 THEN (a.money - a.yishi_divide_money) * f.gdt_game_divide_rate ELSE a.money * f.gdt_game_divide_rate - a.yishi_divide_money END WHEN d.is_gdt = 1 THEN CASE WHEN f.is_before_gdt_divide = 0 THEN (a.money - a.gdt_channel_divide_money - a.gdt_divide_money) * f.gdt_game_divide_rate ELSE a.money * f.gdt_game_divide_rate - a.gdt_channel_divide_money - a.gdt_divide_money END WHEN d.register_type = 7 THEN a.money * f.publish_divide_rate ELSE a.money * (1 - f.game_channel_divide_rate) * f.game_divide_rate 
+END)) AS game_divide_money
+FROM `think_order_log` a 
+LEFT JOIN think_adv_position b ON a.adv_position_id = b.id 
+LEFT JOIN think_channel c ON b.channel_id = c.id 
+LEFT JOIN think_publisher d ON c.publisher_id = d.id 
+LEFT JOIN think_game_adv e ON b.game_adv_id = e.id 
+LEFT JOIN think_game f ON e.game_id = f.id
+WHERE f.game_attribute <> 1
+	AND d.register_type <> 6
+	AND a.register_date >= '20170412'
+	AND a.register_date <= '20170418'
+	AND a.date < '20170419'
+GROUP BY register_type, register_date
+ORDER BY register_type ASC, register_date DESC
