@@ -1,0 +1,32 @@
+渠道:
+
+历史累计用户期内投产数据:(以下三个数据都是以指定时间段为基础的,以adv_position_data中的channel_id分组,以广告位的维度)
+	累计充值(用户):$all['total_user_period_pay_sum']  
+		期内累计充值金额 SUM(think_adv_position_data.pay_sum) 再将所有广告位的用户付费金额相加
+
+	累计分成:$all['total_user_period_game_divide_money'] 将所有广告位的投入金额相加
+		按照指定时间段,	根据是否为yingyongbaoyishi和is_gdt还有渠道所属的渠道商的业务类型来判断分成(对应一条广告位,然后将所有广告位都加进来得到累计分成)		
+
+	累计成本:
+		SUM(think_adv_position_data.divide_money),指定时间段内投入金额,再将所有广告位的投入金额金额相加
+
+	累计回本:$all['total_back_rate']
+		累计回本(total_back_rate) = 累计分成/累计成本	
+
+	总回本率(历史累计回本):
+		先要查询历史用户累计成本、总分成
+			历史用户累计成本:重新查询上面的累计成本,将时间维度去掉,得到渠道下所有游戏成本.
+			历史用户总分成:重新查询上面的累计分成,将时间维度去掉,得到渠道下所有游戏至今的累计分成
+			总回本率 = 历史用户总分成/历史用户累计成本 * 100%
+
+
+	期内用户期内充值:
+		跟累计充值计算大概相似,但是多了一个期内注册用户的条件,将付费金额(adv_position_data.pay_sum)改为(order_log.money)计算.
+		因为order_log表是以用户注册日期来保存的,这样就可以了.
+	期内用户期内分成:
+		同上类似,将付费金额(adv_position_data.pay_sum)改为(order_log.money)来计算.
+	期内用户期内回本:
+		期内用户期内分成/累计成本.
+
+渠道商账号效果,广告位效果,业务类型效果:
+跟按渠道是相同的计算方式,只是渠道是按照channel_id来分组,渠道商通过user_name来分组,业务类型通过register_type来分组,广告位通过adv_position_id来分组,计算得出的数据维度不同,最后相关数据相加.

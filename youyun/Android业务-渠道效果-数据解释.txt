@@ -1,0 +1,100 @@
+//修改后
+(这里是旧的项目代码实现过程,对应旧数据库,看了新库以后还有绕过支付字段,但是更新了项目代码单独执行这段sql又特别慢,而且新源码里使用了order_log表,新库却没有,只有旧库有....时间也赶,代码和数据库版本始终对不上,之后要再研究下这里)
+最上方的搜索条件:
+游戏:来源于think_game表 查询游戏原名和游戏名,以原名=>游戏名作为展示
+负责人:通过think_admin表查询出仍在职的管理员列表来遍历展示
+业务类型:查询register_type表获取name字段信息遍历显示
+公司:companys_config.php文件中配置内容,有大蓝,君海,冰鸟,英兰
+操作:
+选择时间段和游戏名称,渠道负责人,业务类型,公司,渠道类型作为约束条件,点击搜索,查询出数据表字段信息:
+执行相关的sql语句查询出元数据:注册,安装,玩家付费金额,老玩家登陆数(sum(adv_position_data表的old_login得到)),期内投入金额(sum(adv_position_data. divide_money)),期内次日留存(sum(adv_position_data.remain_2))
+期内用户期内充值 SUM(order_log.money)
+需要元数据组合的数据解释:
+period_user_game_divide_money  期内用户期内分成(指定时间内注册用户在这段指定时间内充值的分成)
+total_back_rate 累计回本率 总回本率
+total_user_period_game_divide_money 累计分成(在一段时间内的历史累计分成)
+all_game_divide_money  历史累计分成(游戏上线至今的总的分成)
+
+安装、注册、次留数、累计充值、累计分成、期内成本、累计回本率
+注册率(安装/注册)*100%取一位小数四舍五入,
+注册单价（投入/注册量）  期内投入金额总和(sum(adv_position_data.divide_money))/注册数,四舍五入,保留一位小数
+次留率 期内次日留存人数总和/期内注册人数 *100% 四舍五入保留一位小数
+期内用户期内充值 通过SUM(order_log.money)直接得到
+累计充值:用户期内累计充值(sum()order_log.money))
+
+
+//累计分成 指渠道下的广告位,每日付费金额(pay_sum)的叠加
+计算规则:
+累计分成:
+如果渠道商名称为yingyongbaoyishi:
+    Game表中是否在邑世分成前(is_before_yishi_divide)为否时,
+        adv_position_data表中,将sum(付费金额(pay_sum) - 邑世分得金额(game.yishi_divide_money)),所得的值,在与game表中记录的(通过广告游戏id)广点通游戏分成比例(gdt_game_divide_rate)相乘,最后在按日期累加,得到累计分成.
+    Game表中是否在邑世分成前(is_before_yishi_divide)为是时,
+        付费金额(adv_position_data.pay_sum)*广点通游戏分成百分比(game.gdt_game_divide_rate) - 邑世分得金额(think_adv_position_data.yishi_divide_money)  再按日期累加,得到累计分成.
+如果渠道商表中,标识为广点通,(publisher. is_gdt=1):
+    如果game表中标识为广点通分成后(is_before_gdt_divide=0)
+         adv_position_data表中pay_sum(付费金额)-广点通推广的渠道通道费(gdt_channel_divide_money)-广点通分成金额(gdt_divide_money)的值累加,在乘以广点通推广游戏分成(gdt_game_divide_rate),最后在按日期累加,得到累计分成.
+    如果game表中标识为广点通分成前(is_before_gdt_divide=1)
+          投入金额(adv_position_data.pay_sum) * 广点通推广游戏分成(gdt_game_divide_rate) – 广点通推广的渠道通道费(gdt_channel_divide_money) – 广点通分成金额(gdt_divide_money) 这是一天的,然后在累加,得到累计分成
+如果以上两个条件都没命中,而且渠道商账号的业务类型是发行买量的话(register_type=7):
+	投入金额(adv_position_data.pay_sum)*发行买量分成(game.publish_divide_rate) 再按日期累加得到累计分成.
+如果以上两个条件都没命中,而且业务类型不是发行买量的话:
+	投入金额(adv_position_data.pay_sum) * (1 - 游戏通道费率(game.game_channel_divide_rate)) * 游戏分成比例(game.game_divide_rate)
+
+
+
+//期内充值,期内分成,期内成本,期内回本率
+先介绍几个字段名:
+game.is_before_yishi_divide 广点通分成前,是指在计算分成的时候,广点通游戏分成比例是先于广点通渠道通道费和广点通分成金额计算(邑世分得金额),还是后于广点通渠道通道费和广点通分成金额计算(邑世分得金额) 计算.
+期内用户期内充值:指期内注册的用户在期内充值的金额
+sum(order_log.money),将订单记录表中期内时间所有用户充值金额累加.
+期内用户期内分成:指期内注册的用户在期内充值的金额的分成
+计算规则:
+如果渠道商名称为yingyongbaoyishi:
+    Game表中是否在邑世分成前(is_before_yishi_divide)为否时,
+        Order_log表(订单记录表)中,将sum(用户充值金额总和(期内累计充值,money) - 邑世分得金额(game.yishi_divide_money)),所得的值,在与game表中记录的(通过广告游戏id)广点通游戏分成比例(gdt_game_divide_rate)相乘,最后在按日期累加,得到期内分成.
+    Game表中是否在邑世分成前(is_before_yishi_divide)为是时,
+        用户充值金额(money)*广点通游戏分成百分比(game.gdt_game_divide_rate) - 邑世分得金额(think_adv_position_data.yishi_divide_money)  再按日期累加,得到期内分成.
+如果渠道商表中,标识为广点通,(publisher. is_gdt=1):
+    如果game表中标识为广点通分成后(is_before_gdt_divide=0)
+        将order_log表中玩家充值金额money(期内累计充值)-广点通推广的渠道通道费(gdt_channel_divide_money)-广点通分成金额(gdt_divide_money)的值累加,在乘以广点通推广游戏分成(gdt_game_divide_rate),最后在按日期累加,得到期内分成.
+    如果game表中标识为广点通分成前(is_before_gdt_divide=1)
+        玩家充值金额(期内累计充值) * 广点通推广游戏分成(gdt_game_divide_rate) – 广点通推广的渠道通道费(gdt_channel_divide_money) – 广点通分成金额(gdt_divide_money)这是一天的,然后在累加,得到期内分成
+如果以上两个条件都没命中,如果渠道商账号的业务类型是发行买量的话(register_type=7):
+	投入金额(adv_position_data.money)*发行买量分成(game.publish_divide_rate) 再按日期累加得到期内分成.
+如果以上两个条件都没命中,如果业务类型是其他的话(CPA,CPS,工会,sem,应用宝):
+	用户充值金额(money) * (1 - 游戏渠道分成费率(game_channel_divide_rate)) * 游戏分成比例(game.game_divide_rate)
+简单来说就是:
+如果渠道商是广点通邑世,那么如果该渠道游戏位标记为广点通分成后,则充值金额-邑世分的金额,所得值再乘以广点通分成比例,如果是广点通分成前,则是充值金额*广点通分成比例-邑世分得金额
+这个广点通分成前后,是说广点通的分成比例先与邑世计算还是在邑世之后计算.
+如果是渠道商是广点通,那么根据广点通分成前后,判断与广点通通道费和广点通收费的计费顺序.如果是分成前,则是充值金额先与广点通推广游戏分成比例相乘,在减去通道费和广点通收费.
+最后还要按照业务类型是发行买量是否判断,进行计算.
+期内成本: (sum(adv_position_data.divide_money)), 按日期来叠加divide_money字段就可以得到这段时间内投入广告位的成本
+期内回本率: 上面计算得到的期内用户期内分成/期内投入(期内成本)(sum(adv_position_data.divide_money))*100%,保留一位小数
+
+
+
+//历史用户总分成 历史用户总成本 总回本率
+历史用户总分成:
+如果渠道商用户名为'yingtyongbaoyishi':
+	如果是邑世分成后(is_before_yishi_divide=0)
+		( 用户付费金额(think_adv_position_data.pay_sum) - 邑世分成(think_adv_position_data.yishi_divide_money) ) * 广点通游戏分成百分比(gdt_game_divide_rate) 再将数据表中所有该数据累加.
+	如果是邑世分成前(is_before_yishi_divide=1)
+		用户付费金额(think_adv_position_data.pay_sum)*广点通游戏分成百分比(game.gdt_game_divide_rate) - 邑世分成(think_adv_position_data.yishi_divide_money) 再将数据表中所有该数据累加.
+	如果用户名为广点通 (channel.is_gdt=1):
+		如果是广点通分成后(is_before_gdt_divide=0)
+			(  用户付费金额(think_adv_position_data.pay_sum) - 广点通推广的渠道通道费(think_adv_position_data.gdt_channel_divide_money) - 广点通分成金额(think_adv_position_data.gdt_divide_money)  )*广点通推广的游戏分成(gdt_game_divide_rate) 将表中所有记录叠加得到总分成.
+		如果是广点通分成前(is_before_gdt_divide=1)
+			用户付费金额(think_adv_position_data.pay_sum) * 广点通游戏分成百分比(gdt_game_divide_rate) - 广点通推广的渠道通道费(gdt_channel_divide_money) - 广点通分成金额(gdt_divide_money) 再将数据表中所有该数据累加.
+	如果以上两个条件都没命中,,如果渠道商账号的业务类型是发行买量的话(register_type=7):
+		投入金额(adv_position_data.pay_sum)*发行买量分成(game.publish_divide_rate) 再将数据表中所有数据累加.
+	如果以上两个条件都没命中,如果业务类型是其他的话(CPA,CPS,工会,sem,应用宝):
+		投入金额(adv_position_data.pay_sum) * ( 1-游戏通道费率(game_channel_divide_rate)) *游戏分成比例(game.game_divide_rate)
+历史用户总成本:sum(adv_position_data.divide_money),累加同一个广告位所有时间上的投入金额
+总回本率(累计回本率):历史用户总分成 / 历史用户总成本 *100%,保留一位小数
+
+总结:
+累计成本和历史成本,累计分成和历史分成没有区别,只是时间维度不同.历史成本和历史分成是整体和全部,累计成本和分成是其中一段时间的数据.一个是前台指定的时间段内,一个是总的数据表所有数据的累计.
+但是累计分成和期内分成不同,多了一个期内的限制,这个期内指的是在这个时间段内的注册用户,累计分成使用的是adv_position_data表中的pay_num(付费金额)字段,
+而期内分成使用的是order_log表中的money字段(充值金额),累计成本由于是从adv_pisition_data表中使用pay_sum字段,adv_pisition_data表的数据是一天一条数据,所以是无法看到一个期内用户(在指定时间段内注册)的期内分成的,而是只能看到指定时间段内的一个广告位分成情况.order_log表包含有register_date(注册日期),可以根据这个当做用户注册日期查询,得到期内用户信息.
+ 
