@@ -1,3 +1,14 @@
+什么是打包???游戏打包是什么意思???跟广告位发布广告对应的游戏包有关系吗??
+
+sem游戏包是什么意思??
+
+游戏,游戏广告,广告位,渠道(渠道,渠道数据(
+
+其实渠道数据是渠道表的中的渠道每日情况的一个说明,是渠道实际效果详细展示,渠道表就是渠道信息,渠道数据表是具体渠道每日的效果指标的保存)),渠道商,有哪些属性,互相之间怎么关联????
+
+合作模式:think_publisher.register_type 注册账号类型:1CPA，2CPS，3公会，4SEM，5应用宝,6君海，7发行买量 用于计算分成的时候用,如果是发行买量 xxx  如果不是,xxx
+计费模式:think_game_adv.cooperation_mode CPA,CPS,安装,比如计算单价,成本的时候用的.
+
 //修改后
 (这里是旧的项目代码实现过程,对应旧数据库,看了新库以后还有绕过支付字段,但是更新了项目代码单独执行这段sql又特别慢,而且新源码里使用了order_log表,新库却没有,只有旧库有....时间也赶,代码和数据库版本始终对不上,之后要再研究下这里)
 最上方的搜索条件:
@@ -36,7 +47,7 @@ all_game_divide_money  历史累计分成(游戏上线至今的总的分成)
          adv_position_data表中pay_sum(付费金额)-广点通推广的渠道通道费(gdt_channel_divide_money)-广点通分成金额(gdt_divide_money)的值累加,在乘以广点通推广游戏分成(gdt_game_divide_rate),最后在按日期累加,得到累计分成.
     如果game表中标识为广点通分成前(is_before_gdt_divide=1)
           付费金额(adv_position_data.pay_sum) * 广点通推广游戏分成(gdt_game_divide_rate) – 广点通推广的渠道通道费(gdt_channel_divide_money) – 广点通分成金额(gdt_divide_money) 这是一天的,然后在累加,得到累计分成
-如果以上两个条件都没命中,而且渠道商账号的业务类型是发行买量的话(register_type=7):
+如果以上两个条件都没命中,而且渠道商账号的业务类型是发行买量的话(publisher.register_type=7):
 	付费金额(adv_position_data.pay_sum)*发行买量分成(game.publish_divide_rate) 再按日期累加得到累计分成.
 如果以上两个条件都没命中,而且业务类型不是发行买量的话:
 	付费金额(adv_position_data.pay_sum) * (1 - 游戏通道费率(game.game_channel_divide_rate)) * 游戏分成比例(game.game_divide_rate)
@@ -89,7 +100,7 @@ sum(order_log.money),将订单记录表中期内时间所有用户充值金额�
 	如果以上两个条件都没命中,,如果渠道商账号的业务类型是发行买量的话(register_type=7):
 		投入金额(adv_position_data.pay_sum)*发行买量分成(game.publish_divide_rate) 再将数据表中所有数据累加.
 	如果以上两个条件都没命中,如果业务类型是其他的话(CPA,CPS,工会,sem,应用宝):
-		投入金额(adv_position_data.pay_sum) * ( 1-游戏通道费率(game_channel_divide_rate)) *游戏分成比例(game.game_divide_rate)
+		投入金额(adv_position_data.pay_sum) * ( 1-游戏通道费率(game.game_channel_divide_rate)) *游戏分成比例(game.game_divide_rate)
 历史用户总成本:sum(adv_position_data.divide_money),累加同一个广告位所有时间上的投入金额
 总回本率(累计回本率):历史用户总分成 / 历史用户总成本 *100%,保留一位小数
 
@@ -101,3 +112,7 @@ sum(order_log.money),将订单记录表中期内时间所有用户充值金额�
 期内用户相关指标最重要的一个条件:order_log.date(订单付费日期)和register_date的时间限制.这代表了这段限定时间内的注册用户和发生充值的时间.
 累计成本由于是从adv_pisition_data表中使用pay_sum字段,adv_pisition_data表的数据是一天一条数据,所以是无法看到一个期内用户(在指定时间段内注册)的期内分成的,而是只能看到指定时间段内的一个广告位分成情况.order_log表包含有register_date(注册日期),可以根据这个当做用户注册日期查询,得到期内用户信息.
  
+
+
+ 不重要的问题:
+ E:\xampp\htdocs\admin.youyunad.com\admin\Admin\Home\Controller\AdvPositionDataController.class.php  180行,为什么cps计算分给渠道商的钱,跟计算我们得到的分成的公式是一样的,只是费率从两个表取出,一个是game表,一个是adv_position表.
