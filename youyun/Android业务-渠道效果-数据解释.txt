@@ -35,11 +35,11 @@ all_game_divide_money  历史累计分成(游戏上线至今的总的分成)
     如果game表中标识为广点通分成后(is_before_gdt_divide=0)
          adv_position_data表中pay_sum(付费金额)-广点通推广的渠道通道费(gdt_channel_divide_money)-广点通分成金额(gdt_divide_money)的值累加,在乘以广点通推广游戏分成(gdt_game_divide_rate),最后在按日期累加,得到累计分成.
     如果game表中标识为广点通分成前(is_before_gdt_divide=1)
-          投入金额(adv_position_data.pay_sum) * 广点通推广游戏分成(gdt_game_divide_rate) – 广点通推广的渠道通道费(gdt_channel_divide_money) – 广点通分成金额(gdt_divide_money) 这是一天的,然后在累加,得到累计分成
+          付费金额(adv_position_data.pay_sum) * 广点通推广游戏分成(gdt_game_divide_rate) – 广点通推广的渠道通道费(gdt_channel_divide_money) – 广点通分成金额(gdt_divide_money) 这是一天的,然后在累加,得到累计分成
 如果以上两个条件都没命中,而且渠道商账号的业务类型是发行买量的话(register_type=7):
-	投入金额(adv_position_data.pay_sum)*发行买量分成(game.publish_divide_rate) 再按日期累加得到累计分成.
+	付费金额(adv_position_data.pay_sum)*发行买量分成(game.publish_divide_rate) 再按日期累加得到累计分成.
 如果以上两个条件都没命中,而且业务类型不是发行买量的话:
-	投入金额(adv_position_data.pay_sum) * (1 - 游戏通道费率(game.game_channel_divide_rate)) * 游戏分成比例(game.game_divide_rate)
+	付费金额(adv_position_data.pay_sum) * (1 - 游戏通道费率(game.game_channel_divide_rate)) * 游戏分成比例(game.game_divide_rate)
 
 
 
@@ -93,8 +93,11 @@ sum(order_log.money),将订单记录表中期内时间所有用户充值金额�
 历史用户总成本:sum(adv_position_data.divide_money),累加同一个广告位所有时间上的投入金额
 总回本率(累计回本率):历史用户总分成 / 历史用户总成本 *100%,保留一位小数
 
+
 总结:
 累计成本和历史成本,累计分成和历史分成没有区别,只是时间维度不同.历史成本和历史分成是整体和全部,累计成本和分成是其中一段时间的数据.一个是前台指定的时间段内,一个是总的数据表所有数据的累计.
 但是累计分成和期内分成不同,多了一个期内的限制,这个期内指的是在这个时间段内的注册用户,累计分成使用的是adv_position_data表中的pay_num(付费金额)字段,
-而期内分成使用的是order_log表中的money字段(充值金额),累计成本由于是从adv_pisition_data表中使用pay_sum字段,adv_pisition_data表的数据是一天一条数据,所以是无法看到一个期内用户(在指定时间段内注册)的期内分成的,而是只能看到指定时间段内的一个广告位分成情况.order_log表包含有register_date(注册日期),可以根据这个当做用户注册日期查询,得到期内用户信息.
+而期内分成使用的是order_log表中的money字段(充值金额).
+期内用户相关指标最重要的一个条件:order_log.date(订单付费日期)和register_date的时间限制.这代表了这段限定时间内的注册用户和发生充值的时间.
+累计成本由于是从adv_pisition_data表中使用pay_sum字段,adv_pisition_data表的数据是一天一条数据,所以是无法看到一个期内用户(在指定时间段内注册)的期内分成的,而是只能看到指定时间段内的一个广告位分成情况.order_log表包含有register_date(注册日期),可以根据这个当做用户注册日期查询,得到期内用户信息.
  
