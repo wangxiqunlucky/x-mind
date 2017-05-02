@@ -29,3 +29,28 @@ remark类备注 char(64)
 
 2017年4月28日17:48:57
 下周找老大要一下最新的代码和数据库,然后是数据库设计规范和代码设计规范.
+
+
+2017年5月2日14:59:36
+laravel重构的设计:
+之前tp里,几乎每个方法都会存在获取用户输入然后进行查询的前置操作:
+比如这种:
+    	if(I('principal')) {
+    		$principal = I('principal');
+    		$remark = M('Admin')->getFieldById($principal, 'remark');
+    	}else {
+	    	$remark = $_SESSION['current_account']['remark'];
+	    	$result_principal = M('Admin')->field('id, remark')->where("remark='".$remark."'")->find();
+	    	if($result_principal) {
+	    		$principal = $result_principal['id'];
+    			$remark = $result_principal['remark'];
+	    	}else {
+    			$remark = M('Admin')->getFieldById($principal, 'remark');
+	    	}
+    	}
+这个是基于功能的角度,重构的话,这一块的设计思路应该不用变化.还是这样的设计思路但是代码写成是:
+
+
+另外,一般调用R函数和D函数的话,设计成其他方式实现:
+
+
