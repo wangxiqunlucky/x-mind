@@ -54,3 +54,72 @@ laravel重构的设计:
 另外,一般调用R函数和D函数的话,设计成其他方式实现:
 
 
+
+2017年5月3日16:03:17
+
+现在遇到一般的一些业务数据计算:
+历史分成
+期内分成
+这些都是常用的,能不能封装起来,用门面?
+如果分成的数据每几个月半年就修改一次,岂不是每次都要把全部控制器内的分成计算都要修改一下?肯定要使用集中的方式的.
+但是这种集中的方式怎么设计呢, 我现在的想法是使用一个类或者函数来处理,把需要的值通过数据库查询传入进去,然后在里面进行计算,并返回.
+昨天说到用户验证的时候读取了数据库,怎么使用数据库返回值的问题,每次需要一个属性都获取还是麻烦,我在这里写了一个新方法来批量获取:
+D:\xampp\htdocs\laravel5.1\laravel5.1\vendor\laravel\framework\src\Illuminate\Auth\GenericUser.php
+getAllAttributes() 来一次性获取所有的属性
+
+
+两个解决办法:
+引入全局helper.php文件,在composer.json中添加file:app/helpers.php 运行composer dump-autoload ,但是这样很low.第三方类也可以这样引入,到时候直接$xigua = new \xigua();$xigua->xiqun();low,拒绝.
+使用服务提供者,注册服务,然后使用facades,这里不明白怎么使用.
+引入第三方类库:
+1.新建一个目录放第三方类库
+2.找到composer.json文件打开，在里面autoload 下classmap下面加入类库路径
+3根目录下运行composer dumpautoload 
+4.使用时直接use 类的名称即可
+5.方法调用可以new对象后->方法名访问  也可以类名::方法名访问.
+还是太low了,需要自己new,而且还是全局加载,某次请求不需要的话还是会加载,如何注册到服务容器里并且在需要的时候加载?
+注册服务提供者:
+只需要在config/app.php的providers中添加App\Providers\HelperServiceProvider::calss,进行注册以后,就可以被程序自动实例化调用.
+但是,还需要在该文件内的register方法中进行注册,boot将在所有服务提供者被注册完成后被调用.但是全局函数不需要每次都加载,可以进行缓载.需要加载的时候再加载.
+设置$defer=true,再定义一个provides方法.
+其中,register方法和provides方法这样写:
+
+    public function register()
+    {
+        $this->app->singleton('App\Providers\Helpers\Helpers',function(){
+            return new Helpers('123456');
+        });
+    }
+    public function provides() {
+        return ['App\Providers\Helpers\Helpers'];
+    }
+    控制器里直接可以用\App::make('App\Providers\Helpers\Helpers');得到实例化对象.
+    但是,本来想在实例化的时候传参给第三方类库一个123456,然后在__construct($input)接收,但是没想到laravel将其认为是依赖(符合laravel容器的执行),并且无法解决.导致无法进行实例化的时候传参.
+    不对,是我的写法有问题,因为依赖注入必须是声明依赖的类名,这里根本没依赖,而就是一个值,后面我重写了下又没问题了.但是其实现在有了更多的问题:
+    1.到底是如何进行服务的注册的.
+    2.注册使用的匿名函数到底是怎么用的.
+    3.第三方库如果也声明了某些依赖,而且是实现了某些接口的依赖,这些依赖在注册服务的时候register方法应该怎么写.http://blog.csdn.net/hel12he/article/details/46897179  别人在注册某个第三方类(声明了依赖某个接口)以后,register方法是这样写的:
+        public function register()
+    {
+        $this->app->singleton('App\Libary\Contracts\Encryption\EncrypterInterface', function($app){
+            $config = $app->make('config')->get('app');
+
+            $key = $config['key'];
+
+            return new AesCrypt($key);
+        });
+    }
+    101行,App\Libary\Contracts\Encryption\EncrypterInterface 这里是哪个依赖的接口,实在不明白.
+
+//代码重构思路:
+获取负责人列表 可以提供负责人的array或者是供前端显示的字符串.放在ApiController控制器里,经常要跨控制器调用,这种写法通常不被建议.
+解决方案:
+1.放在父类构造函数中来执行.
+2.使用公共函数.
+3.貌似可以通过service,服务提供者注册服务,而且还解决了依赖的问题.并且还可以处理逻辑代码.laravel的serviceprovider是不是跟tp里的service是一样的,介于m层和c层之间.
+
+
+
+
+遇到的问题:
+保存在session里的用户信息比cookie的存储时间要短,导致用户可以自动登录,但是登录以后保存在session里的数据却会丢失.
