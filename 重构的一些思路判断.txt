@@ -1,0 +1,27 @@
+在用户登录的时候,会在验证登录的时候通过email将全部的数据都查询出来,保存到session中.
+array (size=5)
+  '__hash__' => 
+    array (size=1)
+      '460af21ed8f68835a9896e7feb1ddc2f' => string '2ba34b23c74866c8d628d4b7bcfff265' (length=32)  //md5加密config中设置的一个参数
+  '77f8df80b28f3773308641dabfbbe9f5' => string '15dad8e564c1dce923000db0df612ccf2' (length=33)
+  'current_account' =>                                                                            //全部的用户数据,使用函数getBy,tp内置
+    array (size=12)
+      'id' => string '2' (length=1)
+      'role_id' => string '1' (length=1)
+      'email' => string 'luowenlang@ijunhai.com' (length=22)
+      'password' => string 'ac3ddf56ef2faa3c72106d19dbb066f9' (length=32)
+      'mail_hash' => string '' (length=0)
+      'remark' => string '林晓章' (length=9)
+      'is_super' => string '1' (length=1)
+      'is_active' => string '1' (length=1)
+      'last_login_at' => string '1493884372' (length=10)
+      'created_at' => string '1411022658' (length=10)
+      'updated_at' => string '1448850538' (length=10)
+      'remember_token' => string '' (length=0)
+  'mineaad' => string '2' (length=1)
+  'eaadminae' => boolean true
+  这是一个标准用户打印出来的session数组.
+
+
+
+菜单和节点那块,是需要好好考虑的.我一开始以为node这部分是没用的,但其实是在commonController中使用,用来生成菜单的.
