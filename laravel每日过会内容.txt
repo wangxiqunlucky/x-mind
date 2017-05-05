@@ -81,7 +81,7 @@ getAllAttributes() 来一次性获取所有的属性
 
 注册服务提供者:
 只需要在config/app.php的providers中添加App\Providers\HelperServiceProvider::calss,进行注册以后,就可以被程序自动实例化调用.
-但是,还需要在该文件内的register方法中进行注册,boot将在所有服务提供者被注册完成后被调用.但是全局函数不需要每次都加载,可以进行缓载.需要加载的时候再加载.
+然后执行命令: php artisan make:provider RiakServiceProvider,来生成服务提供者文件,默认是在provider目录下.然后,还需要在该文件内的register方法中进行注册,boot将在所有服务提供者被注册完成后被调用.但是全局函数不需要每次都加载,可以进行缓载.需要加载的时候再加载.
 设置$defer=true,再定义一个provides方法.
 其中,register方法和provides方法这样写:
 
