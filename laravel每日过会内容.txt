@@ -1,0 +1,159 @@
+﻿1.明天说一下重新认识的composer自动加载机制.
+2.说一下container 服务容器整个实现.
+3.实现一个简单的功能.
+
+
+
+2017年4月26日00:16:11
+昨天的看服务容器源码的任务是没完成的,但是理解了依赖注入,控制反转,控制正转,重新学习了trait.
+今天的任务还是看下laravel的容器实现过程吧.配合sf上的和书上的第六章.
+然后可以自己使用框架进行开发了.
+2017年4月27日14:30:41
+设置cookie 返回json字符
+
+
+2017年4月28日12:50:033
+下午过会:
+讲一下laravel进度,写的功能如何利用laravel本身来实现,
+下周工作内容,设计数据库,需求确定,打算先慢慢开始重写Android业务部分数据展示,使用数据迁移功能来重写数据库.再要一份最新的,在平台上运行的源码和数据库
+海哥婚礼的事.
+数据表设计规范:
+主键 设置为int increment unsigned
+用户账号类型 设置为varchar(64) 
+密码类型 设置为varchar(128)
+时间戳类型 设置为int
+状态类型(是否寄送发票,是否广点通用户等) 设置为tinyint
+用户地址,邮编,qq,微信等信息 设置为varchar(64)
+用户人数类型(留存,注册等) 设置为unsigned mediumint类型
+remark类备注 char(64)
+
+2017年4月28日17:48:57
+下周找老大要一下最新的代码和数据库,然后是数据库设计规范和代码设计规范.
+
+
+2017年5月2日14:59:36
+laravel重构的设计:
+之前tp里,几乎每个方法都会存在获取用户输入然后进行查询的前置操作:
+比如这种:
+    	if(I('principal')) {
+    		$principal = I('principal');
+    		$remark = M('Admin')->getFieldById($principal, 'remark');
+    	}else {
+	    	$remark = $_SESSION['current_account']['remark'];
+	    	$result_principal = M('Admin')->field('id, remark')->where("remark='".$remark."'")->find();
+	    	if($result_principal) {
+	    		$principal = $result_principal['id'];
+    			$remark = $result_principal['remark'];
+	    	}else {
+    			$remark = M('Admin')->getFieldById($principal, 'remark');
+	    	}
+    	}
+这个是基于功能的角度,重构的话,这一块的设计思路应该不用变化.还是这样的设计思路但是代码写成是:
+
+
+另外,一般调用R函数和D函数的话,设计成其他方式实现:
+
+
+
+2017年5月3日16:03:17
+
+现在遇到一般的一些业务数据计算:
+历史分成
+期内分成
+这些都是常用的,能不能封装起来,用门面?
+如果分成的数据每几个月半年就修改一次,岂不是每次都要把全部控制器内的分成计算都要修改一下?肯定要使用集中的方式的.
+但是这种集中的方式怎么设计呢, 我现在的想法是使用一个类或者函数来处理,把需要的值通过数据库查询传入进去,然后在里面进行计算,并返回.
+昨天说到用户验证的时候读取了数据库,怎么使用数据库返回值的问题,每次需要一个属性都获取还是麻烦,我在这里写了一个新方法来批量获取:
+D:\xampp\htdocs\laravel5.1\laravel5.1\vendor\laravel\framework\src\Illuminate\Auth\GenericUser.php
+getAllAttributes() 来一次性获取所有的属性
+
+
+两个解决办法:
+引入全局helper.php文件,在composer.json中添加file:app/helpers.php 运行composer dump-autoload ,但是这样很low.第三方类也可以这样引入,到时候直接$xigua = new \xigua();$xigua->xiqun();low,拒绝.
+使用服务提供者,注册服务,然后使用facades,这里不明白怎么使用.
+引入第三方类库:
+1.新建一个目录放第三方类库
+2.找到composer.json文件打开，在里面autoload 下classmap下面加入类库路径
+3根目录下运行composer dumpautoload 
+4.使用时直接use 类的名称即可
+5.方法调用可以new对象后->方法名访问  也可以类名::方法名访问.
+还是太low了,需要自己new,而且还是全局加载,某次请求不需要的话还是会加载,如何注册到服务容器里并且在需要的时候加载?
+
+注册服务提供者:
+只需要在config/app.php的providers中添加App\Providers\HelperServiceProvider::calss,进行注册以后,就可以被程序自动实例化调用.
+然后执行命令: php artisan make:provider RiakServiceProvider,来生成服务提供者文件,默认是在provider目录下.然后,还需要在该文件内的register方法中进行注册,boot将在所有服务提供者被注册完成后被调用.但是全局函数不需要每次都加载,可以进行缓载.需要加载的时候再加载.
+设置$defer=true,再定义一个provides方法.
+其中,register方法和provides方法这样写:
+
+    public function register()
+    {
+        $this->app->singleton('App\Providers\Helpers\Helpers',function(){
+            return new Helpers('123456');
+        });
+    }
+    public function provides() {
+        return ['App\Providers\Helpers\Helpers'];
+    }
+    控制器里直接可以用\App::make('App\Providers\Helpers\Helpers');得到实例化对象.
+    但是,本来想在实例化的时候传参给第三方类库一个123456,然后在__construct($input)接收,但是没想到laravel将其认为是依赖(符合laravel容器的执行),并且无法解决.导致无法进行实例化的时候传参.
+    不对,是我的写法有问题,因为依赖注入必须是声明依赖的类名,这里根本没依赖,而就是一个值,后面我重写了下又没问题了.但是其实现在有了更多的问题:
+    1.到底是如何进行服务的注册的.
+    2.注册使用的匿名函数到底是怎么用的.
+    3.第三方库如果也声明了某些依赖,而且是实现了某些接口的依赖,这些依赖在注册服务的时候register方法应该怎么写.http://blog.csdn.net/hel12he/article/details/46897179  别人在注册某个第三方类(声明了依赖某个接口)以后,register方法是这样写的:
+        public function register()
+    {
+        $this->app->singleton('App\Libary\Contracts\Encryption\EncrypterInterface', function($app){
+            $config = $app->make('config')->get('app');
+
+            $key = $config['key'];
+
+            return new AesCrypt($key);
+        });
+    }
+    101行,App\Libary\Contracts\Encryption\EncrypterInterface 这里是哪个依赖的接口,实在不明白.
+
+//代码重构思路:
+获取负责人列表 可以提供负责人的array或者是供前端显示的字符串.放在ApiController控制器里,经常要跨控制器调用,这种写法通常不被建议.
+解决方案:
+1.放在父类构造函数中来执行.
+2.使用公共函数.
+3.貌似可以通过service,服务提供者注册服务,而且还解决了依赖的问题.并且还可以处理逻辑代码.laravel的serviceprovider是不是跟tp里的service是一样的,介于m层和c层之间.
+
+2017-05-04T      04:07:20.217Z
+Thu, 04-May-2017 04:07:15 GMT; Max-Age=7200
+
+遇到的问题:
+保存在session里的用户信息比cookie的存储时间要短,导致用户可以自动登录,但是登录以后保存在session里的数据却会丢失.
+问题解决:不再使用rememberme功能.cookie将会自动保存2小时.这里的rememberme和session的使用是矛盾的.
+
+
+
+
+facades里面解释:
+"当用户在 Cache facade 上参考任何的静态方法，Laravel 会从 服务容器 解析被绑定的 cache 以及针对对象运行请求的方法（在这个例子中是 get）。"
+即: Cache::get();其实是根据Cache作为别名查询绑定的服务,查询到是cachemanager服务,get方法也在此内.所以真实的运行是CacheManager::get();而不是Cache::get.
+
+
+2017年5月8日12:16:37:
+花了一上午,为了更好的调试sql,启动了一个debugbar的插件,通过composer安装以后,怎么设置都不行,查了无数英文资料,也无法figured it out,总是在前端那里报错:PhpDebugBar is not defined,最后在laravel5.4上测试,一切正常...最后中午解决了该问题.
+
+现在好像遇到一个问题,rbac管理上,源码判断控制器是否为public,如果是则获取其方法,然后查询其它控制器和方法,以控制器名=>方法名=>node.id来保存.
+本来是很好的,但是在获取public方法以后,使用加号添加到其他每个控制器中.变成:
+控制器名=>
+		方法名=>//这里的方法获得:其他控制器的方法 + public控制器中的方法,如果方法名重复,保留前面的,不明白这什么意思,之前没出bug是因为node表没有public控制器的方法
+				node.id
+
+2017年5月9日12:13:24
+rbac的逻辑修改:
+原先逻辑:
+先获取角色权限,放入accesslst中,然后获取用户个人权限,如果accesslist没有该节点信息则放入accesslist中,再判断是否用户继承,如果不继承,则将存在于accesslist而又不存在于个人权限数组的删掉.
+修改为:
+先判断是否继承,继承则获取角色权限.
+再获取个人权限,放入accesslist.
+然后修改了逻辑,之前会使用三个foreach,现在合并为一个.还有其他的代码优化.
+
+菜单生成:
+设计到三个地方;
+1.之前是获取表中全部数据,现在只获取node表中id,pid和title,然后根据当前用户权限进行生成菜单.
+2.菜单生成使用模板拼接,这块还不清楚太具体使用.
+3.模板的url路由的注册.
