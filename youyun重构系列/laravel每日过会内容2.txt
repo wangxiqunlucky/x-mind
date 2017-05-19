@@ -172,14 +172,14 @@ footer
 遇到一个问题,花了5个小时:
 明明在config/app.php的providers数组中添加了服务提供者,但是为什么无法使用服务,查了无数资料,微信问了几个同学,众说纷纭,有人说app.php可能路径错了,(但是我考虑确实有这个可能,我当时上传svn的时候为了方便快速打开,我设置了根目录),但是回来我测试又拍错,其实又觉得不可能,加载都是通过相对路径加载的.
 后来我直接删除了app文件,可是界面还是可以正常显示,一般来说,providers数组中的服务都会直接注册的,根本不管是否用不用的到,这也是网上喷laravel重的原因,一个空请求要实例化33个类,所以无论如何我都觉得这个现象比较重要,想到缓存,但是我已经执行了:
-PHP artisan cache::clear 
-PHP artisan view::clear 
-PHP artisan route::clear 
-PHP artisan debugbar::clear 
+PHP artisan cache:clear 
+PHP artisan view:clear 
+PHP artisan route:clear 
+PHP artisan debugbar:clear 
 这些缓存清除命令,所以按理说不可能还存在什么缓存...
 4个小时以后,我发现原来还有两个缓存:
-PHP artisan config::clear 
-PHP artisan cache::table
+PHP artisan config:clear 
+PHP artisan cache:table
 ............
 这六个缓存和具体细节现在没空去了解了,周末去搞一下:
 1.这些缓存的生成方式,生成环境,使用环境是什么.
@@ -221,11 +221,11 @@ PHP artisan cache::table
 第二,路由文件routes.php这里的话,其实写的多了就有点混乱了,要整理成分组的形式来管理.
 2017年5月16日19:39:40
 未完成内容:
-修改密码:
-管理员管理:添加管理员没做
 角色列表:分配权限没做
-//操作日志:
 节点列表:排序功能没做
+//修改密码:因为验证数据的问题没做完.
+//管理员管理:添加管理员没做
+//操作日志:
 
 2017年5月17日14:35:48
 最烦的就是模板出问题,特别难查错.编辑器不会报任何错,而且自己打印结果又不行,他会先检查模板,确认没错才能打印.
