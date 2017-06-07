@@ -1,0 +1,24 @@
+
+共享盘：
+\\192.168.1.235
+帐号 root
+密码 ijunhai
+
+
+worktile(产品提交需求,进行开发任务,婉仪提供):
+https://my.worktile.com/teams
+账号:wangxiqun@ijunhai.com
+密码:wangxiqun1992
+
+
+提测平台(提交请求测试需求,何杰提供):
+http://192.168.1.204:8080/dinner/index.jsp
+账号:wangxiqun
+密码:123456
+
+
+jira地址(bug管理,测试提交bug,开发解决并反馈,何杰提供)：
+地址:192.168.1.250:8080
+账号:wangxiqun
+密码:wangxiqun1992
+

@@ -1,0 +1,73 @@
+登录操作界面流程详解:
+###    欢迎使用Jumpserver开源跳板机系统   ### 
+
+        1) 输入 ID 直接登录 或 输入部分 IP,主机名,备注 进行搜索登录(如果唯一).
+        2) 输入 / + IP, 主机名 or 备注 搜索. 如: /ip
+        3) 输入 P/p 显示您有权限的主机.
+        4) 输入 G/g 显示您有权限的主机组.
+        5) 输入 G/g + 组ID 显示该组下主机. 如: g1
+        6) 输入 E/e 批量执行命令.
+        7) 输入 U/u 批量上传文件.
+        8) 输入 D/d 批量下载文件.
+        9) 输入 H/h 帮助.
+        0) 输入 Q/q 退出.
+
+Opt or ID>: p
+[ID ] IP               Port   Hostname                    SysUser    Comment
+[0  ] 60.191.203.103   22     Web-UCloud浙江-MySql          [dev]      
+[1  ] 101.69.177.108   22     Data-UCloud浙江-OldData       [dev]      
+[2  ] 115.231.94.65    8888   JunHai-浙江-OldTest           [dev]      
+[3  ] 120.132.68.72    8888   Lan-Web-UCloud北京C-Nat       [dev]      
+[4  ] 122.226.199.75   8888   JunHai-UCloud浙江-NewTest+Nat [dev]      
+[5  ] 183.131.76.233   22     Web-UCloud浙江-Web1           [dev]      
+[6  ] 183.131.76.239   22     Web-UCloud浙江-Web2           [dev]      
+
+Opt or ID>: 3
+Only match Host:  Lan-Web-UCloud北京C-Nat 
+Connecting Lan-Web-UCloud北京C-Nat ...
+Last login: Tue Jun  6 20:28:11 2017 from 106.75.84.194
+[dev@Lan-Web-UCloudBJC-Nat ~]$ su work
+Password: 
+[work@Lan-Web-UCloudBJC-Nat dev]$ ssh web1
+Last login: Tue Jun  6 20:13:09 2017 from 10.10.134.216
+==========================================================
+CentOS Linux release 7.0.1406 (Core) 
+==========================================================
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/vda1        20G  4.1G   16G  21% /
+devtmpfs        1.9G     0  1.9G   0% /dev
+tmpfs           1.9G     0  1.9G   0% /dev/shm
+tmpfs           1.9G  185M  1.7G  10% /run
+tmpfs           1.9G     0  1.9G   0% /sys/fs/cgroup
+/dev/vdb        500G  2.2G  498G   1% /work
+tmpfs           380M     0  380M   0% /run/user/1000
+[work@lan-web-ucloundbjc-web1 ~]$ cd /work/apps/kefu.aidalan.com
+
+
+登录操作步骤流程详解:
+先双击会话.要求输入密码:9ugzKVx27Aa9Efj5,确定后出现几行文字,输入p
+输入3(对应提示的Lan-Web-UCloud北京C-Nat)
+输入:su work(转换为work用户身份,必须以work身份才能跳到web1和web2上)
+输入密码:junhai-work1
+输入:ssh web1 //远程连接kweb1服务器或者输入ssh web2,即连接到web1或者web2上.如果要连接数据库也先执行这个操作.
+
+
+此时分为登录mysql和kefu.aidalan.com:
+    1.登录mysql:(kfweb1的根目录执行.不过由于现在web2也有hosts文件了,在web2上也可以.)
+	    1.1 输入: /work/servers/mysql/bin/mysql -udalan_kefu -hkfmysql -p //其实就是连接数据库了,-h后面跟的是hosts文件绑定过的域名
+	    1.2 输入密码:%s&ajdxJ
+		    成功登录mysql.
+	2.登录kefu.aidalan.com:(kfweb1的根目录执行)
+	    1.1 输入:cd /work/apps/kefu.aidalan.com
+	    1.2 进入网站目录成功.
+如果已经在网站根目录了,想进mysql,记得先cd /到根目录再执行/work/servers/mysql/bin/mysql -udalan_kefu -hkfmysql -p  //可能不用这一步直接连接也可以,没试过.
+
+
+
+P.S.
+需要查看session的memcached主机:cd /etc/hosts
+
+登录linux系统的时候,我账号的密码:
+9ugzKVx27Aa9Efj5
+登录成功后转换身份(su work)work身份的密码:
+junhai-work1
