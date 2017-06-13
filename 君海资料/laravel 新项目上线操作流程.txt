@@ -73,6 +73,9 @@ server.php
 memcache配置:
     1.在.env文件中将SESSION_DRIVER=file修改为memcached
     2.在config/cache.php文件中配置memcached的配置信息即可
+    SESSION_HOST=127.0.0.1
+    SESSION_PORT=11211
+    SESSION_WEIGHT=100    
 memcache和memcached的区别:其实可以理解成2个扩展,历史原因也不想多说了，就是尽量使用memcached就好了，不过也会出现一些很奇怪的Bug，比如使用memcached扩展的适合设置的session（session存放到memcached中，使用的是memcached扩展存放的就会发现不会过期）。
 
 9.如果开了负载均衡,注意其他机器上的代码是否正确,再重新走一遍上面的流程.

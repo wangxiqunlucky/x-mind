@@ -51,6 +51,9 @@ tmpfs           380M     0  380M   0% /run/user/1000
 输入密码:junhai-work1
 输入:ssh web1 //远程连接kweb1服务器或者输入ssh web2,即连接到web1或者web2上.如果要连接数据库也先执行这个操作.
 
+(如果需要连接其他的ip,在选择了跳板机(数字3)以后,直接使用命令 ssh [username@]目标ip [-p22] 
+ 其中如果username为当前跳板机的用户(就是dev和work嘛)就可以省略,端口号为22也是默认的,也可以省略.
+)
 
 此时分为登录mysql和kefu.aidalan.com:
     1.登录mysql:(kfweb1的根目录执行.不过由于现在web2也有hosts文件了,在web2上也可以.)
