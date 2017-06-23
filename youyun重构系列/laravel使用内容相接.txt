@@ -1,9 +1,0 @@
-laravel:
-获取session:
-Request $request->session->get('key_name');
-保存session:
-$request->session->put('key','value');
-保存到数组:
-$request->session->push('arr_key.arr_key_son','value');//session[array_key][array_son][] = 'value';
-自动验证是很好的,其本质是查询了一次数据库(select * from users ),如果我们想要在查询的过程中再获得一些其他信息(用户权限等来判断接下来的菜单显示内容),如果再查询一次数据库就比较低效,laravel中写的不详细,自己查看发现有:
-$request->user()->fields_name;可以自动获取自动验证的时候查询的其他数据.
