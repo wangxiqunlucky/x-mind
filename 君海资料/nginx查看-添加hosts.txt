@@ -1,5 +1,0 @@
-查看nginx的vhost文件:
-/work/config/nginx/vhosts
-需要设置新的hosts直接新建: vim project_name.hosts
-修改host以后使用如下命令进行reload:
-/work/sh/nginx_control reload
